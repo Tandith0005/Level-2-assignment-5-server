@@ -1,0 +1,17 @@
+model Invitation {
+  id            String   @id @default(uuid()) @map("id")
+
+  eventId       String   @map("event_id")
+  invitedUserId String   @map("invited_user_id")
+
+  status        InvitationStatus @default(PENDING) @map("status")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  event         Event @relation(fields: [eventId], references: [id])
+  invitedUser   User  @relation(fields: [invitedUserId], references: [id])
+
+  @@index([eventId])
+  @@index([invitedUserId])
+  @@map("invitation")
+}

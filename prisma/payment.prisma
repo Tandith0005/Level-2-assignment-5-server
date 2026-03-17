@@ -1,0 +1,19 @@
+model Payment {
+  id            String   @id @default(uuid()) @map("id")
+
+  userId        String   @map("user_id")
+  eventId       String   @map("event_id")
+
+  amount        Float    @map("amount")
+  status        PaymentStatus @default(PENDING) @map("status")
+  transactionId String?  @map("transaction_id")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User  @relation(fields: [userId], references: [id])
+  event         Event @relation(fields: [eventId], references: [id])
+
+  @@index([userId])
+  @@index([eventId])
+  @@map("payment")
+}

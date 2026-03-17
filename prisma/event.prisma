@@ -1,0 +1,24 @@
+model Event {
+  id              String   @id @default(uuid()) @map("id")
+  title           String   @map("title")
+  description     String   @map("description")
+  date            DateTime @map("date")
+  venue           String   @map("venue")
+  type            EventType @map("type")
+  registrationFee Float    @default(0) @map("registration_fee")
+
+  creatorId       String   @map("creator_id")
+  creator         User     @relation("UserEvents", fields: [creatorId], references: [id])
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  participants    EventParticipant[]
+  invitations     Invitation[]
+  reviews         Review[]
+  payments        Payment[]
+
+  @@index([creatorId])
+  @@index([type])
+  @@map("event")
+}

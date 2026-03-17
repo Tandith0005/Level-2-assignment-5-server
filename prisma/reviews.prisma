@@ -1,0 +1,20 @@
+model Review {
+  id        String   @id @default(uuid()) @map("id")
+
+  userId    String   @map("user_id")
+  eventId   String   @map("event_id")
+
+  rating    Int      @map("rating")
+  comment   String   @map("comment")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User  @relation(fields: [userId], references: [id])
+  event     Event @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("review")
+}

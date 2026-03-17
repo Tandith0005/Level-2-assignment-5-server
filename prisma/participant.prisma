@@ -1,0 +1,19 @@
+model EventParticipant {
+  id        String   @id @default(uuid()) @map("id")
+
+  userId    String   @map("user_id")
+  eventId   String   @map("event_id")
+
+  status    ParticipantStatus @default(PENDING) @map("status")
+  isPaid    Boolean           @default(false) @map("is_paid")
+
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  user      User  @relation(fields: [userId], references: [id])
+  event     Event @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("event_participant")
+}
