@@ -7,7 +7,7 @@ interface EnvConfig{
     JWT_REFRESH_SECRET: string;
     EMAIL_USER: string;
     EMAIL_PASS: string;
-
+    RESEND_API_KEY: string;
 }
 
 const loadEnvVars = (): EnvConfig => {
@@ -20,6 +20,7 @@ const loadEnvVars = (): EnvConfig => {
         "JWT_REFRESH_SECRET",
         "EMAIL_USER",
         "EMAIL_PASS",
+        "RESEND_API_KEY",
     ];
 
     requireEnvVariable.forEach((key) => {
@@ -37,6 +38,7 @@ const loadEnvVars = (): EnvConfig => {
         JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET as string,
         EMAIL_USER: process.env.EMAIL_USER as string,
         EMAIL_PASS: process.env.EMAIL_PASS as string,
+        RESEND_API_KEY: process.env.RESEND_API_KEY as string
     };
 };
 

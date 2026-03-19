@@ -1,8 +1,11 @@
-import nodemailer from "nodemailer";
+// src/utils/sendEmail.ts
+import { Resend } from "resend";
 import ejs from "ejs";
 import path from "path";
+import { envVars } from "../../config/envVars.js";
 
-// src/utils/sendEmail.ts
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 export const sendEmail = async (
   to: string,
   subject: string,
@@ -10,38 +13,27 @@ export const sendEmail = async (
   data: any
 ) => {
   try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
+    // Render EJS template
     const templatePath = path.join(
       process.cwd(),
-      "src/app/templates", // Double check this path exists in the build!
+      "src/app/templates",
       `${templateName}.ejs`
     );
 
-    console.log("Attempting to render template at:", templatePath); // Debug log
-    
     const html = (await ejs.renderFile(templatePath, data)) as string;
 
-    console.log("Attempting to send email to:", to); // Debug log
-
-    const info = await transporter.sendMail({
-      from: `"Planora" <${process.env.EMAIL_USER}>`, // Add a name
-      to,
+    // Send email via Resend
+    const response = await resend.emails.send({
+      from: "Planora <onboarding@resend.dev>",
+      to : envVars.EMAIL_USER,
       subject,
       html,
     });
 
-    console.log("Email sent successfully:", info.messageId);
-    return info;
-    
+    console.log("✅ Email sent via Resend:", response);
+    return response;
   } catch (error) {
-    console.error("❌ EMAIL SEND ERROR:", error); // This will show up in Render logs
-    throw error; // Re-throw so the API returns an error to the frontend
+    console.error("❌ EMAIL SEND ERROR:", error);
+    throw error;
   }
 };
