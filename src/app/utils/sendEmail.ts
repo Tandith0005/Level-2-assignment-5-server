@@ -2,33 +2,46 @@ import nodemailer from "nodemailer";
 import ejs from "ejs";
 import path from "path";
 
+// src/utils/sendEmail.ts
 export const sendEmail = async (
   to: string,
   subject: string,
   templateName: string,
   data: any
 ) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-  // load template
-  const templatePath = path.join(
-    process.cwd(),
-    "src/app/templates",
-    `${templateName}.ejs`
-  );
+    const templatePath = path.join(
+      process.cwd(),
+      "src/app/templates", // Double check this path exists in the build!
+      `${templateName}.ejs`
+    );
 
-  const html = (await ejs.renderFile(templatePath, data)) as string;
+    console.log("Attempting to render template at:", templatePath); // Debug log
+    
+    const html = (await ejs.renderFile(templatePath, data)) as string;
 
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to,
-    subject,
-    html,
-  });
+    console.log("Attempting to send email to:", to); // Debug log
+
+    const info = await transporter.sendMail({
+      from: `"Planora" <${process.env.EMAIL_USER}>`, // Add a name
+      to,
+      subject,
+      html,
+    });
+
+    console.log("Email sent successfully:", info.messageId);
+    return info;
+    
+  } catch (error) {
+    console.error("❌ EMAIL SEND ERROR:", error); // This will show up in Render logs
+    throw error; // Re-throw so the API returns an error to the frontend
+  }
 };
