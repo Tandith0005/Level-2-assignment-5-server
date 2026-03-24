@@ -1,8 +1,10 @@
 import status from "http-status";
 import { prisma } from "../../lib/prisma.js";
 import AppError from "../../utils/AppError.js";
-import { EventType, ParticipantStatus } from "../../../generated/client/enums.js";
-
+import {
+  EventType,
+  ParticipantStatus,
+} from "../../../generated/client/enums.js";
 
 const joinEvent = async (userId: string, eventId: string) => {
   // 1. Get event
@@ -61,8 +63,9 @@ const joinEvent = async (userId: string, eventId: string) => {
 const approveParticipant = async (
   ownerId: string,
   eventId: string,
-  participantId: string
+  participantId: string,
 ) => {
+  // 1. Check ownership
   const event = await prisma.event.findUnique({
     where: { id: eventId },
   });
@@ -71,18 +74,28 @@ const approveParticipant = async (
     throw new AppError("Not authorized", status.FORBIDDEN);
   }
 
-  return prisma.eventParticipant.update({
-    where: { id: participantId },
+  // 2. Atomic update
+  const result = await prisma.eventParticipant.updateMany({
+    where: {
+      id: participantId,
+      eventId: eventId,
+    },
     data: {
       status: ParticipantStatus.APPROVED,
     },
   });
+
+  if (result.count === 0) {
+    throw new AppError("Participant not found in this event", status.NOT_FOUND);
+  }
+
+  return { message: "Participant approved" };
 };
 
 const rejectParticipant = async (
   ownerId: string,
   eventId: string,
-  participantId: string
+  participantId: string,
 ) => {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -92,18 +105,27 @@ const rejectParticipant = async (
     throw new AppError("Not authorized", status.FORBIDDEN);
   }
 
-  return prisma.eventParticipant.update({
-    where: { id: participantId },
+  const result = await prisma.eventParticipant.updateMany({
+    where: {
+      id: participantId,
+      eventId: eventId,
+    },
     data: {
       status: ParticipantStatus.REJECTED,
     },
   });
+
+  if (result.count === 0) {
+    throw new AppError("Participant not found in this event", status.NOT_FOUND);
+  }
+
+  return { message: "Participant rejected" };
 };
 
 const banParticipant = async (
   ownerId: string,
   eventId: string,
-  participantId: string
+  participantId: string,
 ) => {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -113,12 +135,21 @@ const banParticipant = async (
     throw new AppError("Not authorized", status.FORBIDDEN);
   }
 
-  return prisma.eventParticipant.update({
-    where: { id: participantId },
+  const result = await prisma.eventParticipant.updateMany({
+    where: {
+      id: participantId,
+      eventId: eventId,
+    },
     data: {
       status: ParticipantStatus.BANNED,
     },
   });
+
+  if (result.count === 0) {
+    throw new AppError("Participant not found in this event", status.NOT_FOUND);
+  }
+
+  return { message: "Participant banned" };
 };
 
 export const EventParticipantService = {
