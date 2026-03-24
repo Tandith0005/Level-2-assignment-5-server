@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import { EventRoutes } from "../app/modules/event/event.routes.js";
+import { EventParticipantRoutes } from "../app/modules/eventParticipant/eventParticipant.routes.js";
 
 const router = Router();
 
@@ -9,6 +10,7 @@ router.use('/test', (req:Request, res: Response) => {
 
 
 router.use("/events", EventRoutes);
+router.use("/event-participants", EventParticipantRoutes);
 
 
 export const IndexRoutes = router;
