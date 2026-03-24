@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+
+dotenv.config();
 interface EnvConfig{
     PORT: string;
     BASE_URL: string;

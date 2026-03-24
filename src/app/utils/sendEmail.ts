@@ -25,15 +25,14 @@ export const sendEmail = async (
     // Send email via Resend
     const response = await resend.emails.send({
       from: "Planora <onboarding@resend.dev>",
+      // when using production, change to:envVars.EMAIL_USER  with to:to
       to : envVars.EMAIL_USER,
       subject,
       html,
     });
 
-    console.log("✅ Email sent via Resend:", response);
     return response;
   } catch (error) {
-    console.error("❌ EMAIL SEND ERROR:", error);
     throw error;
   }
 };
