@@ -5,6 +5,7 @@ import {
   EventType,
   ParticipantStatus,
 } from "../../../generated/client/enums.js";
+import createNotification from "../../utils/createNotification.js";
 
 const joinEvent = async (userId: string, eventId: string) => {
   // 1. Get event
@@ -19,11 +20,11 @@ const joinEvent = async (userId: string, eventId: string) => {
   // If the event is PRIVATE, users cannot self-join. They must be invited.
   if (event.type === "PRIVATE") {
     throw new AppError(
-      "This is a private event. You can only join via invitation.", 
-      status.BAD_REQUEST
+      "This is a private event. You can only join via invitation.",
+      status.BAD_REQUEST,
     );
   }
-  
+
   // 2. Prevent self join
   if (event.creatorId === userId) {
     throw new AppError("You cannot join your own event", status.BAD_REQUEST);
@@ -82,7 +83,6 @@ const joinEvent = async (userId: string, eventId: string) => {
     },
   });
 
-
   return {
     message: "Payment required to complete registration",
     participant,
@@ -92,7 +92,7 @@ const joinEvent = async (userId: string, eventId: string) => {
 const approveParticipant = async (
   ownerId: string,
   eventId: string,
-  participantId: string
+  participantId: string,
 ) => {
   // 1. Check event ownership
   const event = await prisma.event.findUnique({
@@ -100,14 +100,17 @@ const approveParticipant = async (
   });
 
   if (!event || event.creatorId !== ownerId) {
-    throw new AppError("You are not authorized to manage this event", status.FORBIDDEN);
+    throw new AppError(
+      "You are not authorized to manage this event",
+      status.FORBIDDEN,
+    );
   }
 
   // 2. Get the participant with payment status
   const participant = await prisma.eventParticipant.findUnique({
     where: {
       id: participantId,
-      eventId: eventId,        
+      eventId: eventId,
     },
   });
 
@@ -119,7 +122,7 @@ const approveParticipant = async (
   if (!participant.isPaid && event.registrationFee > 0) {
     throw new AppError(
       "Cannot approve participant. User has not completed payment yet.",
-      status.BAD_REQUEST
+      status.BAD_REQUEST,
     );
   }
 
@@ -131,9 +134,12 @@ const approveParticipant = async (
     },
   });
 
-  return { 
+  // 5. Send notification
+  await createNotification(participant.userId, "Your request has been approved");
+
+  return {
     message: "Participant approved successfully",
-    participant: result 
+    participant: result,
   };
 };
 
@@ -150,21 +156,26 @@ const rejectParticipant = async (
     throw new AppError("Not authorized", status.FORBIDDEN);
   }
 
-  const result = await prisma.eventParticipant.updateMany({
+  const participant = await prisma.eventParticipant.findUnique({
     where: {
       id: participantId,
       eventId: eventId,
     },
-    data: {
-      status: ParticipantStatus.REJECTED,
-    },
   });
 
-  if (result.count === 0) {
+  if (!participant) {
     throw new AppError("Participant not found in this event", status.NOT_FOUND);
   }
 
-  return { message: "Participant rejected" };
+  const result = await prisma.eventParticipant.update({
+    where: { id: participantId },
+    data: { status: ParticipantStatus.REJECTED },
+  });
+
+  // Send notification
+  await createNotification(participant.userId, "Your request has been rejected");
+
+  return { message: "Participant rejected", participant: result };
 };
 
 const banParticipant = async (
@@ -180,21 +191,24 @@ const banParticipant = async (
     throw new AppError("Not authorized", status.FORBIDDEN);
   }
 
-  const result = await prisma.eventParticipant.updateMany({
+  const participant = await prisma.eventParticipant.findUnique({
     where: {
       id: participantId,
       eventId: eventId,
     },
-    data: {
-      status: ParticipantStatus.BANNED,
-    },
   });
 
-  if (result.count === 0) {
+  if (!participant) {
     throw new AppError("Participant not found in this event", status.NOT_FOUND);
   }
 
-  return { message: "Participant banned" };
+  
+  const result = await prisma.eventParticipant.update({
+    where: { id: participantId },
+    data: { status: ParticipantStatus.BANNED },
+  });
+
+  return { message: "Participant banned", participant: result };
 };
 
 const confirmPayment = async (userId: string, eventId: string) => {
@@ -230,6 +244,9 @@ const confirmPayment = async (userId: string, eventId: string) => {
       isPaid: true,
     },
   });
+
+  // 4. Send notification
+  await createNotification(userId, "Payment successful for event");
 
   return { message: "Payment successful" };
 };

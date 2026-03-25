@@ -1,12 +1,15 @@
 import status from "http-status";
 import { prisma } from "../../lib/prisma.js";
 import AppError from "../../utils/AppError.js";
-import { InvitationStatus, ParticipantStatus } from "../../../generated/client/enums.js";
+import {
+  InvitationStatus,
+  ParticipantStatus,
+} from "../../../generated/client/enums.js";
 
 const sendInvitation = async (
   ownerId: string,
   eventId: string,
-  invitedUserId: string
+  invitedUserId: string,
 ) => {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -49,13 +52,17 @@ const sendInvitation = async (
     },
   });
 
+  await prisma.notification.create({
+    data: {
+      userId: invitedUserId,
+      message: "You have been invited to an event",
+    },
+  });
+
   return invitation;
 };
 
-const acceptInvitation = async (
-  userId: string,
-  invitationId: string
-) => {
+const acceptInvitation = async (userId: string, invitationId: string) => {
   const invite = await prisma.invitation.findUnique({
     where: { id: invitationId },
     include: { event: true },
@@ -104,10 +111,7 @@ const acceptInvitation = async (
   return participant;
 };
 
-const declineInvitation = async (
-  userId: string,
-  invitationId: string
-) => {
+const declineInvitation = async (userId: string, invitationId: string) => {
   const invite = await prisma.invitation.findUnique({
     where: { id: invitationId },
   });
