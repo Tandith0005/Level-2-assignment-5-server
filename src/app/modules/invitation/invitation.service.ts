@@ -1,0 +1,131 @@
+import status from "http-status";
+import { prisma } from "../../lib/prisma.js";
+import AppError from "../../utils/AppError.js";
+import { InvitationStatus, ParticipantStatus } from "../../../generated/client/enums.js";
+
+const sendInvitation = async (
+  ownerId: string,
+  eventId: string,
+  invitedUserId: string
+) => {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+  });
+
+  if (!event || event.creatorId !== ownerId) {
+    throw new AppError("Not authorized", status.FORBIDDEN);
+  }
+
+  // already participant?
+  const participant = await prisma.eventParticipant.findUnique({
+    where: {
+      userId_eventId: {
+        userId: invitedUserId,
+        eventId,
+      },
+    },
+  });
+
+  if (participant) {
+    throw new AppError("User already joined", status.BAD_REQUEST);
+  }
+
+  // already invited?
+  const existingInvite = await prisma.invitation.findFirst({
+    where: {
+      eventId,
+      invitedUserId,
+    },
+  });
+
+  if (existingInvite) {
+    throw new AppError("User already invited", status.BAD_REQUEST);
+  }
+
+  const invitation = await prisma.invitation.create({
+    data: {
+      eventId,
+      invitedUserId,
+    },
+  });
+
+  return invitation;
+};
+
+const acceptInvitation = async (
+  userId: string,
+  invitationId: string
+) => {
+  const invite = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    include: { event: true },
+  });
+
+  if (!invite || invite.invitedUserId !== userId) {
+    throw new AppError("Invitation not found", status.NOT_FOUND);
+  }
+
+  if (invite.status !== "PENDING") {
+    throw new AppError("Invitation status is not pending", status.BAD_REQUEST);
+  }
+
+  const event = invite.event;
+
+  // create participant
+  const participant = await prisma.eventParticipant.create({
+    data: {
+      userId,
+      eventId: event.id,
+      status:
+        event.registrationFee === 0
+          ? ParticipantStatus.APPROVED
+          : ParticipantStatus.PENDING,
+      isPaid: event.registrationFee === 0,
+    },
+  });
+
+  // update invitation
+  await prisma.invitation.update({
+    where: { id: invitationId },
+    data: { status: InvitationStatus.ACCEPTED },
+  });
+
+  // if paid → create payment
+  if (event.registrationFee > 0) {
+    await prisma.payment.create({
+      data: {
+        userId,
+        eventId: event.id,
+        amount: event.registrationFee,
+      },
+    });
+  }
+
+  return participant;
+};
+
+const declineInvitation = async (
+  userId: string,
+  invitationId: string
+) => {
+  const invite = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+  });
+
+  if (!invite || invite.invitedUserId !== userId) {
+    throw new AppError("Invitation not found", status.NOT_FOUND);
+  }
+
+  return prisma.invitation.update({
+    where: { id: invitationId },
+    data: {
+      status: InvitationStatus.DECLINED,
+    },
+  });
+};
+
+export const InvitationService = {
+  sendInvitation,
+  acceptInvitation,
+  declineInvitation,
+};

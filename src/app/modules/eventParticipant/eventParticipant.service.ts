@@ -16,6 +16,14 @@ const joinEvent = async (userId: string, eventId: string) => {
     throw new AppError("Event not found", status.NOT_FOUND);
   }
 
+  // If the event is PRIVATE, users cannot self-join. They must be invited.
+  if (event.type === "PRIVATE") {
+    throw new AppError(
+      "This is a private event. You can only join via invitation.", 
+      status.BAD_REQUEST
+    );
+  }
+  
   // 2. Prevent self join
   if (event.creatorId === userId) {
     throw new AppError("You cannot join your own event", status.BAD_REQUEST);
