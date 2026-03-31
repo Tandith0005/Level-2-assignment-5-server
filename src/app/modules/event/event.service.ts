@@ -22,7 +22,7 @@ const getAllEvents = async (query: any) => {
     page = 1,
     limit = 9,
     sortBy = "date",
-    sortOrder = "asc",
+    sortOrder = "desc",
   } = query;
 
   const pageNumber = Number(page) || 1;
@@ -117,8 +117,13 @@ const getSingleEvent = async (eventId: string) => {
 const getMyEvents = async (userId: string) => {
   return await prisma.event.findMany({
     where: { creatorId: userId },
+    include: {
+      _count: {
+        select: { participants: true },
+      },
+    },
   });
-}
+};
 
 const updateEvent = async (
   userId: string,
