@@ -17,6 +17,7 @@ interface EnvConfig{
     STRIPE_CANCEL_URL: string;
     ADMIN_EMAIL: string;
     ADMIN_PASSWORD: string;
+    OPENAI_API_KEY: string
 }
 
 const loadEnvVars = (): EnvConfig => {
@@ -35,7 +36,8 @@ const loadEnvVars = (): EnvConfig => {
         "STRIPE_SUCCESS_URL",
         "STRIPE_CANCEL_URL",
         "ADMIN_EMAIL",
-        "ADMIN_PASSWORD"
+        "ADMIN_PASSWORD",
+        "OPENAI_API_KEY"
     ];
 
     requireEnvVariable.forEach((key) => {
@@ -59,7 +61,8 @@ const loadEnvVars = (): EnvConfig => {
         STRIPE_SUCCESS_URL: process.env.STRIPE_SUCCESS_URL as string,
         STRIPE_CANCEL_URL: process.env.STRIPE_CANCEL_URL as string,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL as string,
-        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD as string
+        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD as string,
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY as string
     };
 };
 

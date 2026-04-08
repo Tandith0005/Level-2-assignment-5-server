@@ -6,6 +6,7 @@ import { AuthRoutes } from "./app/modules/auth/auth.routes.js";
 import { envVars } from "./config/envVars.js";
 import { notFound } from "./app/middleware/notFound.js";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler.js";
+import { AIRoutes } from "./app/modules/ai/ai.routes.js";
 
 const app = express();
 
@@ -39,6 +40,8 @@ app.use(cookieParser());
 app.use("/api/auth", AuthRoutes);
 // all module routes
 app.use("/api/v1", IndexRoutes);
+// ai module
+app.use("/api/v1/ai", AIRoutes ); 
 
 // not found
 app.use(notFound);
